@@ -2,6 +2,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const verifyToken = require('../middlewares/verifyToken');
 
 module.exports = function(app) {
+  // User routes (no auth)
   app.use('/users', createProxyMiddleware({
     target: process.env.USER_SERVICE,
     changeOrigin: true,
@@ -13,20 +14,7 @@ module.exports = function(app) {
     }
   }));
 
-  module.exports = (app) => {
-    app.use('/auctions', verifyToken, createProxyMiddleware({
-      target: process.env.AUCTION_SERVICE,
-      changeOrigin: true,
-      pathRewrite: {
-        '^/auctions': '/api/auctions'
-      },
-      onError(err, req, res) {
-        console.error('Proxy error:', err);
-        res.status(500).send('Proxy failed');
-      }
-    }));
-  };
-
+  // Auction routes (require auth)
   app.use('/auctions', verifyToken, createProxyMiddleware({
     target: process.env.AUCTION_SERVICE,
     changeOrigin: true,
@@ -42,21 +30,27 @@ module.exports = function(app) {
     }
   }));
 
+  // Bid routes (require auth)
   app.use('/bids', verifyToken, createProxyMiddleware({
     target: process.env.BID_SERVICE,
     changeOrigin: true,
     pathRewrite: {
       '^/bids': '/api/bids',
     },
-    onProxyReq: (proxyReq, req) => {
+    onProxyReq: (proxyReq, req, res) => {
       console.log('[Proxy] Forwarding /bids request to BID_SERVICE');
+
+      if (req.body) {
+        const bodyData = JSON.stringify(req.body);
+        proxyReq.setHeader('Content-Type', 'application/json');
+        proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+        proxyReq.write(bodyData);
+      }
     },
     onError(err, req, res) {
       console.error('[Proxy Error] /bids:', err.message);
       res.status(500).send('Proxy failed');
     }
   }));
-
-
 
 };

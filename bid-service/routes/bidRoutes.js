@@ -23,5 +23,29 @@ router.post('/', async (req, res) => {
   }
 });
 
+// GET /api/bids/auction/:auctionId - list bids for a specific auction
+router.get('/auction/:auctionId', async (req, res) => {
+  try {
+    const { auctionId } = req.params;
+    const bids = await Bid.find({ auctionId });
+    res.json(bids);
+  } catch (error) {
+    console.error('[BidService] Error fetching bids by auction:', error);
+    res.status(500).json({ message: 'Failed to fetch bids' });
+  }
+});
+
+// GET /api/bids/user/:userId - list bids by a specific user
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const bids = await Bid.find({ bidderId: userId });
+    res.json(bids);
+  } catch (error) {
+    console.error('[BidService] Error fetching bids by user:', error);
+    res.status(500).json({ message: 'Failed to fetch user bids' });
+  }
+});
+
 
 module.exports = router;
