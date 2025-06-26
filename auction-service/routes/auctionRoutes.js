@@ -8,12 +8,14 @@ router.post('/', async (req, res) => {
   try {
     const auction = new Auction(req.body);
     await auction.save();
+    console.log('[AuctionService] Auction saved:', auction);
     res.status(201).json(auction);
   } catch (error) {
     console.error('[AuctionService] Error creating auction:', error);
     res.status(400).json({ message: error.message });
   }
 });
+
 
 
 // List all auctions
@@ -27,6 +29,35 @@ router.get('/', async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
+// Get auction by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const auction = await Auction.findById(req.params.id);
+    if (!auction) {
+      return res.status(404).json({ message: 'Auction not found' });
+    }
+    res.json(auction);
+  } catch (error) {
+    console.error('[AuctionService] Error fetching auction by ID:', error);
+    res.status(500).json({ message: 'Failed to fetch auction' });
+  }
+});
+
+// Delete auction by ID
+router.delete('/:id', async (req, res) => {
+  try {
+    const auction = await Auction.findByIdAndDelete(req.params.id);
+    if (!auction) {
+      return res.status(404).json({ message: 'Auction not found' });
+    }
+    res.json({ message: 'Auction deleted', auction });
+  } catch (error) {
+    console.error('[AuctionService] Error deleting auction:', error);
+    res.status(500).json({ message: 'Failed to delete auction' });
+  }
+});
+
 
 
 // Close expired auctions and notify winners
