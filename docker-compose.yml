@@ -1,0 +1,102 @@
+version: '3.8'
+services:
+  mongo-user:
+    image: mongo
+    container_name: mongo-user
+    ports:
+      - "27017:27017"
+    volumes:
+      - user-mongo-data:/data/db
+
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=mongodb://mongo-user:27017/user-service
+      - JWT_SECRET=supersecret
+    depends_on:
+      - mongo-user
+    volumes:
+      - ./user-service:/app
+      - /app/node_modules
+    working_dir: /app
+    command: npx nodemon server.js
+
+  mongo-auction:
+    image: mongo
+    container_name: mongo-auction
+    ports:
+      - "27018:27017"
+    volumes:
+      - auction-mongo-data:/data/db
+
+  auction-service:
+    build: ./auction-service
+    container_name: auction-service
+    ports:
+      - "5001:5001"
+    environment:
+      - MONGO_URI=mongodb://mongo-auction:27017/auction-service
+    depends_on:
+      - mongo-auction
+    volumes:
+      - ./auction-service:/app
+      - /app/node_modules
+    working_dir: /app
+    command: npx nodemon server.js
+
+  mongo-bid:
+    image: mongo
+    container_name: mongo-bid
+    ports:
+      - "27019:27017"
+    volumes:
+      - bid-mongo-data:/data/db
+
+  bid-service:
+    build: ./bid-service
+    container_name: bid-service
+    ports:
+      - "5002:5002"
+    environment:
+      - MONGO_URI=mongodb://mongo-bid:27017/bid-service
+    depends_on:
+      - mongo-bid
+    volumes:
+      - ./bid-service:/app
+      - /app/node_modules
+    working_dir: /app
+    command: npx nodemon server.js
+
+  auth-gateway:
+    build: ./auth-gateway
+    container_name: auth-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT
+      - JWT_SECRET
+      - USER_SERVICE
+      - AUCTION_SERVICE
+      - BID_SERVICE
+
+    depends_on:
+      - user-service
+      - auction-service
+      - bid-service
+    volumes:
+      - ./auth-gateway:/app
+      - /app/node_modules
+    working_dir: /app
+    command: npx nodemon server.js
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+
+
+volumes:
+  user-mongo-data:
+  auction-mongo-data:
+  bid-mongo-data:
